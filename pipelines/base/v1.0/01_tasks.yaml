@@ -1,0 +1,214 @@
+# Common Tasks
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: debug
+spec:
+  resources:
+    inputs:
+      - name: source
+        type: git
+  steps:
+  - name: list-workspace-files
+    image: ubuntu
+    command:
+    - /bin/bash
+    args:
+    - -c
+    - |
+      set -ex
+      find /workspace
+---
+# Enhancement of the ClusterTask openshift-client with workspace support
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: openshift-cli
+spec:
+  resources:
+    inputs:
+      - name: source
+        type: git
+  params:
+    - default:
+        - help
+      description: The OpenShift CLI arguments to run
+      name: ARGS
+      type: array
+  steps:
+    - name: oc
+      image: 'quay.io/openshift/origin-cli:latest'      
+      args:
+        - $(inputs.params.ARGS)
+      command:
+        - /usr/bin/oc      
+      workingDir: /workspace/source
+      resources: {}
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cd2-deploy
+spec:
+  resources:
+    inputs:
+      - name: source
+        type: git
+#  workspaces:
+#    - name: transfer
+#      mountPath: /workspace/canary-status
+  results:
+  - name: app-new-url
+    description: The base URL of the new application version
+  params:
+    - name: deployWait
+      default: "10"
+      description: Wait - period to wait for the next re-balance action.
+      type: string
+    - name: appNew
+      description: AppNew - The name of the new service name
+      type: string
+    - name: projectName
+      description: Project Name - Label/Name identifier for the app
+      type: string
+    - name: k8sResources
+      description: k8s resource dir - Directory containing the k8s files for deployment
+      type: string  
+    - name: projectNamespace
+      description: namespace - Namespace/Project
+      type: string    
+  steps:    
+    - name: deploy-app-new
+      image: 'quay.io/openshift/origin-cli:latest'  
+      script: |
+        #!/usr/bin/env bash
+
+        # #####################################
+        # Deploys the application:
+        # Deploys the app using the Kubernetes resource files from the source repository
+        # the resource files will be adjusted regarding app name, namespace and other attributes
+
+        rm -rf /workspace/tmp1
+        mkdir -p /workspace/tmp1
+
+        # copy the resource files into an own working directory for the upcoming processing
+        cp -r /workspace/source/$(params.k8sResources)/* /workspace/tmp1
+
+        echo -e "\n########################"
+        echo "Preparing the manifest files..."
+        # set the unified app name
+        find /workspace/tmp1 -type f -exec sed -i 's/%APP_NAME%/$(params.appNew)/g' {} ';'
+
+        # set the general project name
+        find /workspace/tmp1 -type f -exec sed -i 's/%APP_PROJECT%/$(params.projectName)/g' {} ';'
+
+        # set the project/namespace
+        find /workspace/tmp1 -type f -exec sed -i 's/%APP_NAMESPACE%/$(params.projectNamespace)/g' {} ';'
+
+        # disable the flag for primary endpoint
+        find /workspace/tmp1 -type f -exec sed -i 's/%APP_ENDPOINT%/"true"/g' {} ';'
+       
+        # Deploy
+        echo -e "\n########################"
+        echo "Deploying..."
+        oc apply -f /workspace/tmp1/
+
+        # wait some seconds before processing with the next steps
+        sleep $(params.deployWait)
+
+        echo "Done."
+      workingDir: /workspace/source
+      resources: {} 
+---
+# Enhance/Fix the s2i-nodejs
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  annotations:
+    manifestival: new
+  name: s2i-nodejs-v0-11-3-fixed
+  labels:
+    operator.tekton.dev/provider-type: community
+spec:
+  params:
+    - default: '10'
+      description: The version of the nodejs
+      name: VERSION
+      type: string
+    - default: .
+      description: The location of the path to run s2i from.
+      name: PATH_CONTEXT
+      type: string
+    - default: 'true'
+      description: >-
+        Verify the TLS on the registry endpoint (for push/pull to a non-TLS
+        registry)
+      name: TLSVERIFY
+      type: string
+  resources:
+    inputs:
+      - name: source
+        type: git
+    outputs:
+      - name: image
+        type: image
+  steps:
+    - command:
+        - s2i
+        - build
+        - $(params.PATH_CONTEXT)
+        - registry.access.redhat.com/rhscl/nodejs-$(params.VERSION)-rhel7
+        - '--as-dockerfile'
+        - /gen-source/Dockerfile.gen
+      image: registry.redhat.io/ocp-tools-43-tech-preview/source-to-image-rhel8
+      name: generate
+      resources: {}
+      volumeMounts:
+        - mountPath: /gen-source
+          name: gen-source
+      workingDir: /workspace/source
+    # command enhanced with --storage-driver=vfs
+    - command:
+        - buildah
+        - bud
+        - '--tls-verify=$(params.TLSVERIFY)'
+        - '--layers'
+        - '--storage-driver=vfs'
+        - '-f'
+        - /gen-source/Dockerfile.gen
+        - '-t'
+        - $(resources.outputs.image.url)
+        - .
+      image: registry.redhat.io/rhel8/buildah
+      name: build
+      resources: {}
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /var/lib/containers
+          name: varlibcontainers
+        - mountPath: /gen-source
+          name: gen-source
+      workingDir: /gen-source
+    # command enhanced with --storage-driver=vfs
+    - command:
+        - buildah
+        - push
+        - '--storage-driver=vfs'
+        - '--tls-verify=$(params.TLSVERIFY)'
+        - $(resources.outputs.image.url)
+        - 'docker://$(resources.outputs.image.url)'
+      image: registry.redhat.io/rhel8/buildah
+      name: push
+      resources: {}
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - mountPath: /var/lib/containers
+          name: varlibcontainers
+  volumes:
+    - emptyDir: {}
+      name: varlibcontainers
+    - emptyDir: {}
+      name: gen-source
