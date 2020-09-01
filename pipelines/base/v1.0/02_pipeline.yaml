@@ -75,7 +75,7 @@ spec:
         resource: git-repo  
     params:       
     - name: appNew
-      value: "app-$(params.build-id)"    
+      value: "nodejs-tekton-$(params.build-id)"    
       #value: "app-00"    
     - name: projectName
       value: $(params.deployment-name)  
