@@ -21,7 +21,7 @@ let index_page = `
     <section class="container">
       <div>
         <h1 class="title">
-        👋 PoC Mobiliar - Tekton Pipelines 🌍😀
+        👋 Hello World 🌍😀
         </h1>
         <h2 class="subtitle">
         made with 💚 and 🍵
