@@ -7,7 +7,7 @@ let index_page = `
   <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>PoC Mobiliar - Tekton Pipeline</title>
+    <title>PoC Mobiliar - Tekton Pipelines</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -21,7 +21,7 @@ let index_page = `
     <section class="container">
       <div>
         <h1 class="title">
-        👋 Hello World 🌍😀
+        👋 PoC Mobiliar - Tekton Pipelines 🌍😀
         </h1>
         <h2 class="subtitle">
         made with 💚 and 🍵
