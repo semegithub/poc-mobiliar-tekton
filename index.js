@@ -27,7 +27,7 @@ let index_page = `
         made with 💚 and 🍵
         </h2>
         <h2 class="subtitle">
-        proudly deployed by 🦊 Tekton and hosted on OpenShift 3       </h2>                
+        proudly deployed by 🦊 Tekton and hosted on OpenShift 1      </h2>                
       </div>
     </section>
   </body>
