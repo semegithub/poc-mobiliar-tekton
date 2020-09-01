@@ -108,6 +108,9 @@ spec:
 
         # disable the flag for primary endpoint
         find /workspace/tmp1 -type f -exec sed -i 's/%APP_ENDPOINT%/"true"/g' {} ';'
+
+        # disable the flag for primary endpoint
+        find /workspace/tmp1 -type f -exec sed -i 's/%GIT_REVISION%/$(params.git-revision)/g' {} ';'
        
         # Deploy
         echo -e "\n########################"

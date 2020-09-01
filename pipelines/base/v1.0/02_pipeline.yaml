@@ -31,7 +31,7 @@ spec:
   - name: k8s_manifests
     type: string
     description: project deployment manifest directory
-    default: "k8s"
+    default: "openshift-2"
   # ###### Tasks 
   tasks:
   - name: poc-mobiliar-tekton-build-image
