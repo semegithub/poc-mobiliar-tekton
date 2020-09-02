@@ -23,7 +23,7 @@ let index_page = `
         <h1 class="title">
         👋 Hello World 🌍😀
         </h1>
-        <h2> Revision: %GIT_REVISION% 5 </2>
+        <h2> Revision: %GIT_REVISION% 6 </2>
         <h2 class="subtitle">
         made with 💚 and 🍵
         </h2>
