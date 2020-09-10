@@ -21,9 +21,9 @@ let index_page = `
     <section class="container">
       <div>
         <h1 class="title">
-        👋 Hello World 🌍😀
+        👋 Hello World 🌍😀 
         </h1>
-        <h2> Revision: 6</2>
+        <h2> Revision: 7</2>
         <h2 class="subtitle">
         made with 💚 and 🍵
         </h2>
